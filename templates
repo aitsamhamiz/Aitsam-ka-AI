@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ur">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pro AI Assistant</title>
+  <!-- Markdown Library for Gemini/ChatGPT style responses -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      padding: 16px;
+      text-align: center;
+      background: #1e293b;
+      font-size: 18px;
+      font-weight: 600;
+      border-bottom: 1px solid #334155;
+    }
+    #chat-box {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .msg {
+      padding: 12px 16px;
+      border-radius: 12px;
+      max-width: 85%;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+    .msg p { margin: 0 0 8px 0; }
+    .msg p:last-child { margin-bottom: 0; }
+    .msg pre {
+      background: #090d16;
+      padding: 10px;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+    .user {
+      align-self: flex-end;
+      background: #2563eb;
+      color: #ffffff;
+      border-bottom-right-radius: 2px;
+    }
+    .bot {
+      align-self: flex-start;
+      background: #1e293b;
+      color: #e2e8f0;
+      border: 1px solid #334155;
+      border-bottom-left-radius: 2px;
+    }
+    .input-container {
+      display: flex;
+      padding: 12px;
+      background: #1e293b;
+      border-top: 1px solid #334155;
+      gap: 8px;
+    }
+    input {
+      flex: 1;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      background: #0f172a;
+      color: #ffffff;
+      font-size: 15px;
+      outline: none;
+    }
+    button {
+      padding: 12px 20px;
+      background: #2563eb;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+
+  <header>✨ Pro AI Assistant</header>
+
+  <div id="chat-box">
+    <div class="msg bot">Assalam-o-Alaikum! Main aap ka Advanced AI Assistant hoon. Kuch bhi puchein!</div>
+  </div>
+
+  <div class="input-container">
+    <input type="text" id="userInput" placeholder="Apna sawal likhein..." onkeydown="if(event.key==='Enter') sendMessage()">
+    <button id="sendBtn" onclick="sendMessage()">Send</button>
+  </div>
+
+  <script>
+    let chatHistory = [];
+
+    async function sendMessage() {
+      const input = document.getElementById("userInput");
+      const btn = document.getElementById("sendBtn");
+      const question = input.value.trim();
+
+      if (!question) return;
+
+      appendMessage(question, "user", false);
+      input.value = "";
+      btn.disabled = true;
+
+      chatHistory.push({ role: "user", content: question });
+
+      const botDiv = appendMessage("Soch raha hoon...", "bot", false);
+
+      try {
+        const response = await fetch("/ask", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ history: chatHistory })
+        });
+
+        const data = await response.json();
+        botDiv.innerHTML = marked.parse(data.answer);
+        chatHistory.push({ role: "assistant", content: data.answer });
+
+      } catch (error) {
+        botDiv.textContent = "Error: Connection toot gaya.";
+      } finally {
+        btn.disabled = false;
+        const chatBox = document.getElementById("chat-box");
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+    }
+
+    function appendMessage(text, sender, isMarkdown = false) {
+      const chatBox = document.getElementById("chat-box");
+      const div = document.createElement("div");
+      div.className = `msg ${sender}`;
+      if (isMarkdown) {
+        div.innerHTML = marked.parse(text);
+      } else {
+        div.textContent = text;
+      }
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+      return div;
+    }
+  </script>
+
+</body>
+</html>
